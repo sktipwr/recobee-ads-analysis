@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RecoBee - Ads Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0d0d0d;
+      --bg-secondary: #1a1a1a;
+      --bg-card: #1e1e1e;
+      --bg-card-inner: #252525;
+      --bg-hover: #2a2a2a;
+      --accent: #e8a838;
+      --accent-dim: rgba(232, 168, 56, 0.15);
+      --accent-border: rgba(232, 168, 56, 0.3);
+      --text-primary: #f0f0f0;
+      --text-secondary: #a0a0a0;
+      --text-muted: #666;
+      --border: #2a2a2a;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --info: #60a5fa;
+      --sidebar-width: 64px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 0;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 24px;
+      font-weight: 800; font-size: 18px; color: #000;
+    }
+
+    .sidebar-nav { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+
+    .sidebar-item {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; height: 44px;
+      color: var(--text-muted);
+      cursor: pointer; transition: all 0.2s;
+      position: relative; font-size: 18px;
+      text-decoration: none;
+    }
+
+    .sidebar-item:hover { color: var(--text-secondary); background: var(--bg-hover); }
+
+    .sidebar-item.active {
+      color: var(--accent);
+      background: var(--accent-dim);
+      border-left: 3px solid var(--accent);
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      display: flex; flex-direction: column; gap: 4px; width: 100%;
+    }
+
+    /* Main Content */
+    .main { margin-left: var(--sidebar-width); min-height: 100vh; }
+
+    /* Top Bar */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-secondary);
+      position: sticky; top: 0; z-index: 50;
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+    .btn-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px;
+    }
+
+    .btn-credits {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+
+    .btn-credits .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+    .btn-user {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+
+    .btn-user .avatar {
+      width: 22px; height: 22px; border-radius: 4px;
+      background: var(--accent); color: #000;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 11px;
+    }
+
+    /* Page Content */
+    .page-content { padding: 24px 32px 48px; max-width: 1400px; }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--text-muted); margin-bottom: 8px;
+    }
+
+    .breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--accent); }
+    .breadcrumb .sep { font-size: 10px; }
+
+    /* Page Header */
+    .page-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+    }
+
+    .page-title { font-size: 22px; font-weight: 700; line-height: 1.3; flex: 1; }
+
+    .header-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      border: 1px solid var(--border);
+      text-decoration: none;
+    }
+
+    .btn-outline { background: transparent; color: var(--text-primary); }
+    .btn-outline:hover { background: var(--bg-hover); }
+
+    .btn-accent { background: var(--accent); color: #000; border-color: var(--accent); }
+    .btn-accent:hover { background: #d4952e; }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+      overflow-x: auto;
+    }
+
+    .tab {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 20px;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer; transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+    }
+
+    .tab:hover { color: var(--text-secondary); }
+
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab i { font-size: 14px; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      padding: 18px 24px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      font-size: 16px; font-weight: 600;
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .card-header i { color: var(--accent); font-size: 16px; }
+
+    .card-body { padding: 24px; }
+
+    /* Campaign Info Hero */
+    .hero-card {
+      background: linear-gradient(135deg, var(--bg-card) 0%, #1a1a1a 100%);
+      border: 1px solid var(--accent-border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+    }
+
+    .hero-left { flex: 1; }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 20px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-border);
+      color: var(--accent);
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .hero-summary {
+      font-size: 14px; color: var(--text-secondary);
+      line-height: 1.7; margin-bottom: 16px;
+    }
+
+    .hero-summary .read-more { color: var(--accent); cursor: pointer; font-weight: 500; }
+
+    .hero-meta {
+      display: flex; flex-wrap: wrap; gap: 20px;
+    }
+
+    .meta-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-muted);
+    }
+
+    .meta-item i { color: var(--accent); font-size: 12px; }
+    .meta-item span { color: var(--text-secondary); font-weight: 500; }
+
+    /* Score Ring */
+    .score-ring {
+      width: 120px; height: 120px;
+      position: relative; flex-shrink: 0;
+    }
+
+    .score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+
+    .score-ring .bg-circle {
+      fill: none; stroke: var(--border); stroke-width: 6;
+    }
+
+    .score-ring .progress-circle {
+      fill: none; stroke: var(--accent); stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s ease;
+    }
+
+    .score-ring .score-text {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .score-ring .score-value {
+      font-size: 32px; font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .score-ring .score-max {
+      font-size: 13px; color: var(--text-muted); font-weight: 500;
+    }
+
+    /* Grid Layouts */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+    @media (max-width: 1200px) {
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+      .grid-4 { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .hero-card { flex-direction: column; align-items: center; }
+    }
+
+    /* Stat Cards */
+    .stat-card {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+
+    .stat-label {
+      font-size: 11px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 8px; font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 24px; font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stat-sub {
+      font-size: 12px; color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .stat-value.accent { color: var(--accent); }
+    .stat-value.success { color: var(--success); }
+    .stat-value.warning { color: var(--warning); }
+    .stat-value.danger { color: var(--danger); }
+
+    /* Chart Container */
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 280px;
+    }
+
+    /* Score Bars */
+    .score-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .score-row:last-child { border-bottom: none; }
+
+    .score-row-label {
+      width: 160px; font-size: 13px;
+      color: var(--text-secondary); flex-shrink: 0;
+    }
+
+    .score-bar-track {
+      flex: 1; height: 8px;
+      background: var(--bg-primary);
+      border-radius: 4px; overflow: hidden;
+    }
+
+    .score-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 4px;
+      transition: width 0.8s ease;
+    }
+
+    .score-bar-fill.high { background: var(--success); }
+    .score-bar-fill.medium { background: var(--accent); }
+    .score-bar-fill.low { background: var(--danger); }
+
+    .score-row-value {
+      width: 40px; text-align: right;
+      font-size: 14px; font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Tags */
+    .tag {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+
+    .tag.green { background: rgba(74, 222, 128, 0.1); color: var(--success); border-color: rgba(74, 222, 128, 0.3); }
+    .tag.red { background: rgba(248, 113, 113, 0.1); color: var(--danger); border-color: rgba(248, 113, 113, 0.3); }
+    .tag.blue { background: rgba(96, 165, 250, 0.1); color: var(--info); border-color: rgba(96, 165, 250, 0.3); }
+
+    /* Compliance */
+    .compliance-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-card-inner);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .compliance-item:last-child { margin-bottom: 0; }
+
+    .compliance-label { font-size: 13px; color: var(--text-secondary); }
+
+    .compliance-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600;
+    }
+
+    .compliance-status.pass { color: var(--success); }
+    .compliance-status.warn { color: var(--warning); }
+    .compliance-status.fail { color: var(--danger); }
+
+    /* Development Notes */
+    .dev-note-card {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .dev-note-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 14px; font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .dev-note-title i { color: var(--accent); }
+
+    .dev-note-item {
+      display: flex; gap: 10px;
+      padding: 8px 0;
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .dev-note-item .diamond {
+      color: var(--accent); flex-shrink: 0;
+      margin-top: 2px; font-size: 8px;
+    }
+
+    /* Audience Donut & Segments */
+    .segment-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .segment-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-card-inner);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .segment-color {
+      width: 10px; height: 10px;
+      border-radius: 3px; flex-shrink: 0;
+    }
+
+    .segment-info { flex: 1; }
+    .segment-name { font-size: 13px; font-weight: 500; }
+    .segment-detail { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .segment-value { font-size: 14px; font-weight: 700; color: var(--accent); }
+
+    /* Channel Allocation */
+    .channel-row {
+      display: flex; align-items: center; gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .channel-row:last-child { border-bottom: none; }
+
+    .channel-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--accent-dim);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--accent); font-size: 16px; flex-shrink: 0;
+    }
+
+    .channel-info { flex: 1; }
+    .channel-name { font-size: 14px; font-weight: 600; }
+    .channel-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .channel-pct {
+      font-size: 20px; font-weight: 700;
+      color: var(--accent); flex-shrink: 0;
+    }
+
+    .channel-roas {
+      font-size: 12px; color: var(--text-muted);
+      text-align: right; flex-shrink: 0; width: 80px;
+    }
+
+    .channel-roas span { color: var(--success); font-weight: 600; }
+
+    /* Risk Items */
+    .risk-item {
+      padding: 14px 16px;
+      background: var(--bg-card-inner);
+      border-radius: 8px;
+      border-left: 3px solid var(--warning);
+      margin-bottom: 10px;
+    }
+
+    .risk-item.low { border-left-color: var(--success); }
+    .risk-item.medium { border-left-color: var(--warning); }
+    .risk-item.high { border-left-color: var(--danger); }
+
+    .risk-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .risk-category {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .risk-prob { font-size: 11px; font-weight: 600; }
+    .risk-prob.medium { color: var(--warning); }
+    .risk-prob.high { color: var(--danger); }
+
+    .risk-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+    .risk-mitigation { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-style: italic; }
+
+    /* GO Badge */
+    .go-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 20px; border-radius: 8px;
+      background: rgba(74, 222, 128, 0.12);
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      color: var(--success);
+      font-size: 18px; font-weight: 800;
+      letter-spacing: 2px;
+    }
+
+    .go-badge i { font-size: 18px; }
+
+    /* Strengths / Weaknesses */
+    .sw-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 0;
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .sw-item i { margin-top: 3px; font-size: 12px; }
+    .sw-item i.fa-check-circle { color: var(--success); }
+    .sw-item i.fa-exclamation-circle { color: var(--warning); }
+
+    /* Tab content visibility */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Funnel */
+    .funnel-stage {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 20px;
+      background: var(--bg-card-inner);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .funnel-stage-name {
+      width: 120px; font-size: 13px;
+      font-weight: 600; color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .funnel-bar-track {
+      flex: 1; height: 24px;
+      background: var(--bg-primary);
+      border-radius: 6px; overflow: hidden;
+      position: relative;
+    }
+
+    .funnel-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #d4952e);
+      border-radius: 6px;
+      display: flex; align-items: center;
+      padding-left: 10px;
+      font-size: 12px; font-weight: 700;
+      color: #000;
+      transition: width 0.8s ease;
+    }
+
+    .funnel-score {
+      width: 50px; text-align: right;
+      font-size: 16px; font-weight: 700;
+    }
+
+    /* Competitor */
+    .competitor-card {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .competitor-name {
+      font-size: 15px; font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .competitor-campaign {
+      font-size: 12px; color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .competitor-stats {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    }
+
+    .competitor-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+    .competitor-stat-value { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-top: 2px; }
+
+    .competitor-verdict {
+      margin-top: 12px; padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 12px; color: var(--success);
+      font-weight: 500;
+    }
+
+    .competitor-verdict i { margin-right: 4px; }
+
+    /* Section Title */
+    .section-title {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      margin-top: 24px;
+    }
+
+    .section-title:first-child { margin-top: 0; }
+
+    /* Regional Heatmap */
+    .region-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .region-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-card-inner);
+      border-radius: 8px;
+    }
+
+    .region-name { font-size: 13px; color: var(--text-secondary); }
+    .region-score { font-size: 18px; font-weight: 700; }
+
+    /* Pill tags row */
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    /* KPI Row */
+    .kpi-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .kpi-row:last-child { border-bottom: none; }
+
+    .kpi-label { font-size: 13px; color: var(--text-secondary); }
+    .kpi-target { font-size: 14px; font-weight: 600; color: var(--accent); text-align: center; }
+    .kpi-benchmark { font-size: 14px; color: var(--text-muted); text-align: center; }
+
+    /* Action items */
+    .action-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg-card-inner);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 13px; color: var(--text-secondary);
+    }
+
+    .action-item .num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent);
+      color: #000; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Platform Score Cards */
+    .platform-card {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .platform-card-icon {
+      font-size: 24px; color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .platform-card-name {
+      font-size: 13px; font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .platform-card-score {
+      font-size: 28px; font-weight: 800;
+      color: var(--accent); margin-bottom: 4px;
+    }
+
+    .platform-card-detail {
+      font-size: 11px; color: var(--text-muted);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">R</div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-item" title="Home"><i class="fas fa-home"></i></a>
+      <a class="sidebar-item" title="Analytics"><i class="fas fa-chart-line"></i></a>
+      <a class="sidebar-item" title="Trailer Analysis"><i class="fas fa-film"></i></a>
+      <a class="sidebar-item active" title="Ads Analysis"><i class="fas fa-bullhorn"></i></a>
+      <a class="sidebar-item" title="Media"><i class="fas fa-photo-video"></i></a>
+      <a class="sidebar-item" title="Music"><i class="fas fa-music"></i></a>
+      <a class="sidebar-item" title="Library"><i class="fas fa-folder"></i></a>
+      <a class="sidebar-item" title="Audience"><i class="fas fa-users"></i></a>
+      <a class="sidebar-item" title="Reports"><i class="fas fa-file-alt"></i></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <a class="sidebar-item" title="Logout"><i class="fas fa-sign-out-alt"></i></a>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div></div>
+      <div class="topbar-right">
+        <button class="btn-icon"><i class="fas fa-cog"></i></button>
+        <button class="btn-credits"><span class="dot"></span> Credits</button>
+        <button class="btn-user"><span class="avatar">R</span> Recobee Demo</button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <a href="#">Home</a>
+        <span class="sep"><i class="fas fa-chevron-right"></i></span>
+        <a href="#">Ads Analysis</a>
+        <span class="sep"><i class="fas fa-chevron-right"></i></span>
+        <span>Details</span>
+      </div>
+
+      <!-- Page Header -->
+      <div class="page-header">
+        <h1 class="page-title">Hyundai CRETA ft. Shah Rukh Khan & Deepika Padukone — Action Thriller Campaign</h1>
+        <div class="header-actions">
+          <button class="btn btn-outline"><i class="fas fa-plus"></i> Add new version</button>
+          <button class="btn btn-accent"><i class="fas fa-download"></i> Download</button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab active" data-tab="overview"><i class="fas fa-th-large"></i> Overview</div>
+        <div class="tab" data-tab="performance"><i class="fas fa-chart-bar"></i> Performance</div>
+        <div class="tab" data-tab="audience"><i class="fas fa-users"></i> Audience</div>
+        <div class="tab" data-tab="platform"><i class="fas fa-desktop"></i> Platform</div>
+        <div class="tab" data-tab="compliance"><i class="fas fa-shield-alt"></i> Compliance</div>
+        <div class="tab" data-tab="conversion"><i class="fas fa-funnel-dollar"></i> Conversion</div>
+        <div class="tab" data-tab="competitive"><i class="fas fa-trophy"></i> Competitive</div>
+        <div class="tab" data-tab="roadmap"><i class="fas fa-road"></i> Roadmap</div>
+      </div>
+
+      <!-- ===== OVERVIEW TAB ===== -->
+      <div class="tab-content active" id="tab-overview">
+        <!-- Hero Card: Ad Summary + Score -->
+        <div class="hero-card">
+          <div class="hero-left">
+            <div class="hero-badge"><i class="fas fa-play-circle"></i> Ad Summary</div>
+            <p class="hero-summary">
+              High-concept automotive commercial positioning Hyundai Creta through action-thriller narrative with espionage elements, featuring sophisticated protagonists in urban chase sequences with physics-defying stunts reminiscent of Fast & Furious franchise. The campaign targets aspirational premium SUV buyers through cinematic storytelling...
+              <span class="read-more">Read more</span>
+            </p>
+            <div class="hero-meta">
+              <div class="meta-item"><i class="fas fa-building"></i> <span>Hyundai Motor India</span></div>
+              <div class="meta-item"><i class="fas fa-car"></i> <span>Compact SUV</span></div>
+              <div class="meta-item"><i class="fas fa-clock"></i> <span>140s</span></div>
+              <div class="meta-item"><i class="fas fa-hd"></i> <span>1080p · 16:9</span></div>
+              <div class="meta-item"><i class="fas fa-language"></i> <span>Hindi, English</span></div>
+              <div class="meta-item"><i class="fas fa-star"></i> <span>Premium Tier</span></div>
+            </div>
+          </div>
+          <div class="score-ring">
+            <svg viewBox="0 0 120 120">
+              <circle class="bg-circle" cx="60" cy="60" r="52"/>
+              <circle class="progress-circle" cx="60" cy="60" r="52"
+                stroke-dasharray="326.7"
+                stroke-dashoffset="98"/>
+            </svg>
+            <div class="score-text">
+              <div class="score-value">7.0</div>
+              <div class="score-max">/10</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Virality & Performance Charts Row -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><i class="fas fa-fire"></i> Virality Potential</div>
+            <div class="card-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <span style="font-size:13px;color:var(--text-muted)">Overall Score</span>
+                <span style="font-size:24px;font-weight:700;">6.0<span style="font-size:14px;color:var(--text-muted)">/10</span></span>
+              </div>
+              <div class="chart-container" style="height:220px;">
+                <canvas id="viralityChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><i class="fas fa-chart-bar"></i> Performance Breakdown</div>
+            <div class="card-body">
+              <div class="chart-container" style="height:250px;">
+                <canvas id="performanceChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Overall Scores Grid -->
+        <div class="grid-4" style="margin-bottom:20px;">
+          <div class="stat-card">
+            <div class="stat-label">Creative Quality</div>
+            <div class="stat-value accent">8.0</div>
+            <div class="stat-sub">Strong</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Technical Quality</div>
+            <div class="stat-value accent">8.0</div>
+            <div class="stat-sub">Strong</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Cultural Alignment</div>
+            <div class="stat-value accent">7.0</div>
+            <div class="stat-sub">Good</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Compliance</div>
+            <div class="stat-value success">8.0</div>
+            <div class="stat-sub">Compliant</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Platform Opt.</div>
+            <div class="stat-value warning">6.0</div>
+            <div class="stat-sub">Needs Work</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Viral Potential</div>
+            <div class="stat-value warning">6.0</div>
+            <div class="stat-sub">Moderate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Conversion</div>
+            <div class="stat-value danger">5.0</div>
+            <div class="stat-sub">Weak CTA</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">ROAS Potential</div>
+            <div class="stat-value warning">6.0</div>
+            <div class="stat-sub">Moderate</div>
+          </div>
+        </div>
+
+        <!-- Recommendation + Strengths/Weaknesses -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><i class="fas fa-rocket"></i> Strategic Recommendation</div>
+            <div class="card-body">
+              <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+                <div class="go-badge"><i class="fas fa-check-circle"></i> GO</div>
+                <div>
+                  <div style="font-size:14px;font-weight:600;">75% Success Probability</div>
+                  <div style="font-size:12px;color:var(--text-muted);">Est. time to ROI: 6 months</div>
+                </div>
+              </div>
+              <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:16px;">
+                Proceed with launch after adding compliance disclaimers and strengthening conversion elements. High potential for brand awareness and premium positioning in competitive SUV segment.
+              </p>
+              <div class="section-title">Key Action Items</div>
+              <div class="action-item"><span class="num">1</span> Add compliance disclaimers for stunt sequences</div>
+              <div class="action-item"><span class="num">2</span> Strengthen CTA with test drive / dealer locator</div>
+              <div class="action-item"><span class="num">3</span> Create mobile-optimized vertical versions</div>
+              <div class="action-item"><span class="num">4</span> Develop regional language variants</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><i class="fas fa-balance-scale"></i> Strengths & Weaknesses</div>
+            <div class="card-body">
+              <div class="section-title" style="margin-top:0;">Key Strengths</div>
+              <div class="sw-item"><i class="fas fa-check-circle"></i> Cinematic production quality with professional-grade CGI</div>
+              <div class="sw-item"><i class="fas fa-check-circle"></i> Action-thriller appeal resonates across demographics</div>
+              <div class="sw-item"><i class="fas fa-check-circle"></i> Premium positioning for aspirational audience</div>
+              <div class="sw-item"><i class="fas fa-check-circle"></i> Bollywood-style spectacle with universal entertainment value</div>
+
+              <div class="section-title">Critical Weaknesses</div>
+              <div class="sw-item"><i class="fas fa-exclamation-circle"></i> Physics-defying stunts may undermine credibility</div>
+              <div class="sw-item"><i class="fas fa-exclamation-circle"></i> Limited female audience appeal — male-dominated cast</div>
+              <div class="sw-item"><i class="fas fa-exclamation-circle"></i> High production cost with no clear CTA</div>
+              <div class="sw-item"><i class="fas fa-exclamation-circle"></i> No social proof, urgency, or pricing information</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Development Notes -->
+        <div class="card">
+          <div class="card-header"><i class="fas fa-wrench"></i> Development Notes</div>
+          <div class="card-body">
+            <div class="grid-3">
+              <div class="dev-note-card">
+                <div class="dev-note-title"><i class="fas fa-check-circle"></i> Suggested Edits</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> Add stronger call-to-action with dealer/test drive</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> Include price/offer messaging for consideration</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> Add social proof elements for credibility</div>
+              </div>
+              <div class="dev-note-card">
+                <div class="dev-note-title"><i class="fas fa-cog"></i> Technical Corrections</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> Create vertical versions for Instagram/YouTube Shorts</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> Optimize for multiple durations (15s, 30s, 60s)</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> Improve Tamil/Telugu dubbing quality</div>
+              </div>
+              <div class="dev-note-card">
+                <div class="dev-note-title"><i class="fas fa-bullseye"></i> Viral Optimization Tips</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> Create behind-the-scenes content for organic reach</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> Develop meme-worthy moments from dome stunt</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> Create female-focused variant for broader appeal</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PERFORMANCE TAB ===== -->
+      <div class="tab-content" id="tab-performance">
+        <div class="grid-2" style="align-items:start;">
+          <!-- LEFT COLUMN: Technical Production Scorecard -->
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header"><i class="fas fa-tachometer-alt"></i> Technical Production Scorecard</div>
+            <div class="card-body">
+              <div class="score-row">
+                <div class="score-row-label">Cinematography</div>
+                <div class="score-bar-track"><div class="score-bar-fill high" style="width:90%"></div></div>
+                <div class="score-row-value">9</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Editing & Pacing</div>
+                <div class="score-bar-track"><div class="score-bar-fill high" style="width:90%"></div></div>
+                <div class="score-row-value">9</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Audio & Sound Design</div>
+                <div class="score-bar-track"><div class="score-bar-fill high" style="width:80%"></div></div>
+                <div class="score-row-value">8</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Visual Style & Color</div>
+                <div class="score-bar-track"><div class="score-bar-fill high" style="width:80%"></div></div>
+                <div class="score-row-value">8</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Motion & VFX</div>
+                <div class="score-bar-track"><div class="score-bar-fill high" style="width:80%"></div></div>
+                <div class="score-row-value">8</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Engagement Elements</div>
+                <div class="score-bar-track"><div class="score-bar-fill high" style="width:80%"></div></div>
+                <div class="score-row-value">8</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Technical Execution</div>
+                <div class="score-bar-track"><div class="score-bar-fill high" style="width:80%"></div></div>
+                <div class="score-row-value">8</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Content Clarity</div>
+                <div class="score-bar-track"><div class="score-bar-fill medium" style="width:70%"></div></div>
+                <div class="score-row-value">7</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Platform Optimization</div>
+                <div class="score-bar-track"><div class="score-bar-fill medium" style="width:70%"></div></div>
+                <div class="score-row-value">7</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Subtitles & Captions</div>
+                <div class="score-bar-track"><div class="score-bar-fill medium" style="width:70%"></div></div>
+                <div class="score-row-value">7</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Brand & Product Identity</div>
+                <div class="score-bar-track"><div class="score-bar-fill medium" style="width:70%"></div></div>
+                <div class="score-row-value">7</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Mobile Optimization</div>
+                <div class="score-bar-track"><div class="score-bar-fill medium" style="width:60%"></div></div>
+                <div class="score-row-value">6</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Dubbing Quality</div>
+                <div class="score-bar-track"><div class="score-bar-fill medium" style="width:60%"></div></div>
+                <div class="score-row-value">6</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: Content Architecture + Memorable Moments -->
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <!-- Content Architecture -->
+            <div class="card" style="margin-bottom:0;">
+              <div class="card-header"><i class="fas fa-layer-group"></i> Content Architecture</div>
+              <div class="card-body">
+                <div class="grid-2" style="gap:12px;">
+                  <div class="stat-card" style="border-left:3px solid var(--accent);">
+                    <div class="stat-label">Hook / Opening</div>
+                    <div class="stat-value accent">8</div>
+                    <div class="stat-sub">Mysterious sniper scope creates intrigue</div>
+                    <div style="margin-top:8px;font-size:11px;color:var(--success);">85% retention in first 10s</div>
+                  </div>
+                  <div class="stat-card" style="border-left:3px solid var(--accent);">
+                    <div class="stat-label">Value Delivery</div>
+                    <div class="stat-value accent">7</div>
+                    <div class="stat-sub">Vehicle capabilities via action sequences</div>
+                  </div>
+                  <div class="stat-card" style="border-left:3px solid var(--success);">
+                    <div class="stat-label">Momentum</div>
+                    <div class="stat-value success">9</div>
+                    <div class="stat-sub">Perfect escalation mystery to explosion</div>
+                  </div>
+                  <div class="stat-card" style="border-left:3px solid var(--warning);">
+                    <div class="stat-label">Payoff / CTA</div>
+                    <div class="stat-value warning">6</div>
+                    <div class="stat-sub">Implicit CTA only — needs stronger close</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Memorable Moments -->
+            <div class="card" style="margin-bottom:0;">
+              <div class="card-header"><i class="fas fa-bolt"></i> Memorable Moments</div>
+              <div class="card-body">
+                <div class="pills">
+                  <span class="tag"><i class="fas fa-star" style="margin-right:4px;font-size:9px;"></i> Car on building dome</span>
+                  <span class="tag"><i class="fas fa-star" style="margin-right:4px;font-size:9px;"></i> Explosive chase sequence</span>
+                  <span class="tag"><i class="fas fa-star" style="margin-right:4px;font-size:9px;"></i> Sniper scope opening</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== AUDIENCE TAB ===== -->
+      <div class="tab-content" id="tab-audience">
+        <div class="grid-2">
+          <!-- Primary Demographics -->
+          <div class="card">
+            <div class="card-header"><i class="fas fa-user-circle"></i> Primary Demographics</div>
+            <div class="card-body">
+              <div class="grid-2" style="gap:12px;">
+                <div class="stat-card">
+                  <div class="stat-label">Age Range</div>
+                  <div class="stat-value accent">25–40</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Gender</div>
+                  <div class="stat-value">70% <span style="font-size:14px;color:var(--text-muted)">Male</span></div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Income Bracket</div>
+                  <div class="stat-value" style="font-size:18px;">&#8377;8–25L</div>
+                  <div class="stat-sub">Upper-middle to Premium</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Urban/Rural</div>
+                  <div class="stat-value">80<span style="font-size:14px;color:var(--text-muted)">% Urban</span></div>
+                </div>
+              </div>
+              <div class="section-title">Psychographic Profile</div>
+              <div class="pills">
+                <span class="tag">Performance</span>
+                <span class="tag">Style</span>
+                <span class="tag">Adventure</span>
+                <span class="tag">Sophistication</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Segment Reach Forecast -->
+          <div class="card">
+            <div class="card-header"><i class="fas fa-crosshairs"></i> Segment Reach Forecast</div>
+            <div class="card-body">
+              <div class="chart-container" style="height:250px;">
+                <canvas id="segmentChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Segment ROI + Cultural & Regional — same row -->
+        <div class="grid-2" style="align-items:start;">
+          <!-- Segment ROI Analysis -->
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header"><i class="fas fa-layer-group"></i> Segment ROI Analysis</div>
+            <div class="card-body">
+              <div class="segment-list">
+                <div class="segment-item">
+                  <div class="segment-color" style="background:var(--accent);"></div>
+                  <div class="segment-info">
+                    <div class="segment-name">Urban Male 25-35</div>
+                    <div class="segment-detail">15M reach · CPM ₹150 · 8% engagement · 40% budget</div>
+                  </div>
+                  <div class="segment-value">ROAS 6x</div>
+                </div>
+                <div class="segment-item">
+                  <div class="segment-color" style="background:var(--info);"></div>
+                  <div class="segment-info">
+                    <div class="segment-name">Urban Male 35-45</div>
+                    <div class="segment-detail">12M reach · CPM ₹180 · 6% engagement · 35% budget</div>
+                  </div>
+                  <div class="segment-value">ROAS 7x</div>
+                </div>
+                <div class="segment-item">
+                  <div class="segment-color" style="background:var(--success);"></div>
+                  <div class="segment-info">
+                    <div class="segment-name">Car Enthusiasts</div>
+                    <div class="segment-detail">5M reach · CPM ₹200 · 12% engagement · 15% budget</div>
+                  </div>
+                  <div class="segment-value" style="color:var(--success);">ROAS 8x</div>
+                </div>
+                <div class="segment-item">
+                  <div class="segment-color" style="background:var(--danger);"></div>
+                  <div class="segment-info">
+                    <div class="segment-name">Female 25-40</div>
+                    <div class="segment-detail">8M reach · CPM ₹120 · 3% engagement · 10% budget</div>
+                  </div>
+                  <div class="segment-value" style="color:var(--danger);">ROAS 2x</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cultural & Regional Resonance -->
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header"><i class="fas fa-globe-asia"></i> Cultural & Regional Resonance</div>
+            <div class="card-body">
+              <div class="section-title" style="margin-top:0;">Regional Scores</div>
+              <div class="region-grid" style="margin-bottom:16px;">
+                <div class="region-item">
+                  <div class="region-name">North India</div>
+                  <div class="region-score" style="color:var(--success);">8</div>
+                </div>
+                <div class="region-item">
+                  <div class="region-name">West India</div>
+                  <div class="region-score" style="color:var(--success);">8</div>
+                </div>
+                <div class="region-item">
+                  <div class="region-name">South India</div>
+                  <div class="region-score" style="color:var(--accent);">7</div>
+                </div>
+                <div class="region-item">
+                  <div class="region-name">East India</div>
+                  <div class="region-score" style="color:var(--warning);">6</div>
+                </div>
+              </div>
+              <div class="section-title">Cultural Scores</div>
+              <div class="score-row">
+                <div class="score-row-label">Pan-India Resonance</div>
+                <div class="score-bar-track"><div class="score-bar-fill high" style="width:80%"></div></div>
+                <div class="score-row-value">8</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Cultural Sensitivity</div>
+                <div class="score-bar-track"><div class="score-bar-fill high" style="width:90%"></div></div>
+                <div class="score-row-value">9</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Stereotype Avoidance</div>
+                <div class="score-bar-track"><div class="score-bar-fill medium" style="width:70%"></div></div>
+                <div class="score-row-value">7</div>
+              </div>
+              <div class="score-row">
+                <div class="score-row-label">Inclusivity</div>
+                <div class="score-bar-track"><div class="score-bar-fill low" style="width:50%"></div></div>
+                <div class="score-row-value">5</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PLATFORM TAB ===== -->
+      <div class="tab-content" id="tab-platform">
+        <div class="grid-2" style="align-items:start;">
+          <!-- LEFT COLUMN: Platform Cards with ROAS, %, details -->
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header"><i class="fas fa-bullseye"></i> Platform Performance & Allocation</div>
+            <div class="card-body" style="padding:16px;">
+              <!-- TV Broadcast -->
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card-inner);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;">
+                <div class="channel-icon"><i class="fas fa-tv"></i></div>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                    <div style="font-size:14px;font-weight:600;">TV Broadcast</div>
+                    <div style="font-size:24px;font-weight:800;color:var(--accent);">9<span style="font-size:12px;color:var(--text-muted);font-weight:500;">/10</span></div>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Mass awareness · Prime time slots · Fully broadcast compliant</div>
+                  <div style="display:flex;gap:10px;">
+                    <span class="tag">40% Budget</span>
+                    <span class="tag green">ROAS 4x</span>
+                    <span class="tag blue">CPM ₹100</span>
+                  </div>
+                </div>
+              </div>
+              <!-- YouTube -->
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card-inner);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;">
+                <div class="channel-icon"><i class="fab fa-youtube"></i></div>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                    <div style="font-size:14px;font-weight:600;">YouTube</div>
+                    <div style="font-size:24px;font-weight:800;color:var(--accent);">8<span style="font-size:12px;color:var(--text-muted);font-weight:500;">/10</span></div>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Targeted reach · Automotive channels · Excellent TrueView hook</div>
+                  <div style="display:flex;gap:10px;">
+                    <span class="tag">25% Budget</span>
+                    <span class="tag green">ROAS 6x</span>
+                    <span class="tag blue">CPM ₹150</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Facebook -->
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card-inner);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;">
+                <div class="channel-icon"><i class="fab fa-facebook"></i></div>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                    <div style="font-size:14px;font-weight:600;">Facebook</div>
+                    <div style="font-size:24px;font-weight:800;color:var(--accent);">7<span style="font-size:12px;color:var(--text-muted);font-weight:500;">/10</span></div>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Demographic targeting · Interest-based · 70% completion forecast</div>
+                  <div style="display:flex;gap:10px;">
+                    <span class="tag">20% Budget</span>
+                    <span class="tag green">ROAS 5x</span>
+                    <span class="tag blue">CPM ₹120</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Instagram -->
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card-inner);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;">
+                <div class="channel-icon"><i class="fab fa-instagram"></i></div>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                    <div style="font-size:14px;font-weight:600;">Instagram</div>
+                    <div style="font-size:24px;font-weight:800;color:var(--accent);">7<span style="font-size:12px;color:var(--text-muted);font-weight:500;">/10</span></div>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Younger audience · Stories & Reels · Needs vertical optimization</div>
+                  <div style="display:flex;gap:10px;">
+                    <span class="tag">10% Budget</span>
+                    <span class="tag green">ROAS 4x</span>
+                    <span class="tag blue">CPM ₹180</span>
+                  </div>
+                </div>
+              </div>
+              <!-- OTT Streaming -->
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card-inner);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;">
+                <div class="channel-icon"><i class="fas fa-play-circle"></i></div>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                    <div style="font-size:14px;font-weight:600;">OTT / Streaming</div>
+                    <div style="font-size:24px;font-weight:800;color:var(--accent);">7<span style="font-size:12px;color:var(--text-muted);font-weight:500;">/10</span></div>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Premium audience · Action adjacency · 85% completion rate</div>
+                  <div style="display:flex;gap:10px;">
+                    <span class="tag">5% Budget</span>
+                    <span class="tag green">ROAS 3x</span>
+                    <span class="tag blue">CPM ₹200</span>
+                  </div>
+                </div>
+              </div>
+              <!-- TikTok -->
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card-inner);border:1px solid var(--border);border-radius:10px;">
+                <div class="channel-icon" style="background:rgba(248,113,113,0.12);color:var(--danger);"><i class="fab fa-tiktok"></i></div>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                    <div style="font-size:14px;font-weight:600;">TikTok</div>
+                    <div style="font-size:24px;font-weight:800;color:var(--danger);">4<span style="font-size:12px;color:var(--text-muted);font-weight:500;">/10</span></div>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Too polished for platform · Low creator authenticity · Limited duet potential</div>
+                  <div style="display:flex;gap:10px;">
+                    <span class="tag red">Not Recommended</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: Media Mix Distribution Chart -->
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <div class="card" style="margin-bottom:0;">
+              <div class="card-header"><i class="fas fa-chart-pie"></i> Media Mix Distribution</div>
+              <div class="card-body">
+                <div class="chart-container" style="height:320px;">
+                  <canvas id="mediaChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campaign Strategy Summary -->
+            <div class="card" style="margin-bottom:0;">
+              <div class="card-header"><i class="fas fa-lightbulb"></i> Campaign Strategy</div>
+              <div class="card-body">
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> <strong>Sequencing:</strong> TV for awareness, digital for consideration, performance for conversion</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> <strong>Frequency:</strong> 3–4 exposures per week optimal</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> <strong>Daypart:</strong> Prime time TV, evening digital</div>
+                <div class="dev-note-item"><i class="fas fa-diamond diamond"></i> <strong>Geographic:</strong> 60% metros, 30% Tier-1, 10% Tier-2</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== COMPLIANCE TAB ===== -->
+      <div class="tab-content" id="tab-compliance">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><i class="fas fa-shield-alt"></i> Regulatory Compliance Audit</div>
+            <div class="card-body">
+              <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+                <div style="font-size:36px;font-weight:800;color:var(--success);">8<span style="font-size:16px;color:var(--text-muted)">/10</span></div>
+                <div>
+                  <div class="tag green">Compliant</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Est. approval: 1-2 weeks</div>
+                </div>
+              </div>
+              <div class="compliance-item">
+                <div class="compliance-label">ASCI Code Adherence</div>
+                <div class="compliance-status pass"><i class="fas fa-check-circle"></i> Compliant</div>
+              </div>
+              <div class="compliance-item">
+                <div class="compliance-label">I&B Ministry Guidelines</div>
+                <div class="compliance-status pass"><i class="fas fa-check-circle"></i> Compliant</div>
+              </div>
+              <div class="compliance-item">
+                <div class="compliance-label">Product-Specific Regulations</div>
+                <div class="compliance-status warn"><i class="fas fa-exclamation-triangle"></i> Minor Addition</div>
+              </div>
+              <div class="compliance-item">
+                <div class="compliance-label">Environmental Claims</div>
+                <div class="compliance-status pass"><i class="fas fa-check-circle"></i> No Claims</div>
+              </div>
+              <div class="compliance-item">
+                <div class="compliance-label">Objectionable Content</div>
+                <div class="compliance-status pass"><i class="fas fa-check-circle"></i> Clean</div>
+              </div>
+              <div class="compliance-item">
+                <div class="compliance-label">Data Privacy (DPDP Act)</div>
+                <div class="compliance-status pass"><i class="fas fa-check-circle"></i> Compliant</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><i class="fas fa-exclamation-triangle"></i> Risk Assessment</div>
+            <div class="card-body">
+              <div class="risk-item medium">
+                <div class="risk-header">
+                  <div class="risk-category">Creative</div>
+                  <div class="risk-prob medium">Medium Probability</div>
+                </div>
+                <div class="risk-desc">Unrealistic stunts may seem fake and undermine credibility</div>
+                <div class="risk-mitigation">Mitigation: Add disclaimers and emphasize entertainment value</div>
+              </div>
+              <div class="risk-item high">
+                <div class="risk-header">
+                  <div class="risk-category">Cultural</div>
+                  <div class="risk-prob high">High Probability</div>
+                </div>
+                <div class="risk-desc">Limited female appeal due to male-dominated cast and action tropes</div>
+                <div class="risk-mitigation">Mitigation: Create female-focused variant of the campaign</div>
+              </div>
+              <div class="risk-item low">
+                <div class="risk-header">
+                  <div class="risk-category">Compliance</div>
+                  <div class="risk-prob medium">High Prob / Low Impact</div>
+                </div>
+                <div class="risk-desc">Stunt sequences require "Professional driver, closed course" disclaimers</div>
+                <div class="risk-mitigation">Mitigation: Add required disclaimers before broadcast</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== CONVERSION TAB ===== -->
+      <div class="tab-content" id="tab-conversion">
+        <!-- Row 1: Three equal-height cards -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:stretch;margin-bottom:20px;">
+          <!-- Conversion Funnel -->
+          <div class="card" style="margin-bottom:0;display:flex;flex-direction:column;">
+            <div class="card-header"><i class="fas fa-funnel-dollar"></i> Conversion Funnel</div>
+            <div class="card-body" style="flex:1;">
+              <div class="funnel-stage">
+                <div class="funnel-stage-name">Awareness</div>
+                <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:90%;">9/10</div></div>
+                <div class="funnel-score" style="color:var(--success);">9</div>
+              </div>
+              <div class="funnel-stage">
+                <div class="funnel-stage-name">Consideration</div>
+                <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:70%;">7/10</div></div>
+                <div class="funnel-score" style="color:var(--accent);">7</div>
+              </div>
+              <div class="funnel-stage">
+                <div class="funnel-stage-name">Intent</div>
+                <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:50%;">5/10</div></div>
+                <div class="funnel-score" style="color:var(--warning);">5</div>
+              </div>
+              <div class="funnel-stage">
+                <div class="funnel-stage-name">Action</div>
+                <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:40%;">4/10</div></div>
+                <div class="funnel-score" style="color:var(--danger);">4</div>
+              </div>
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);text-align:center;">
+                <div class="stat-label">Overall Conversion Score</div>
+                <div class="stat-value warning" style="font-size:28px;">5<span style="font-size:14px;color:var(--text-muted)">/10</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Segment-Specific ROAS -->
+          <div class="card" style="margin-bottom:0;display:flex;flex-direction:column;">
+            <div class="card-header"><i class="fas fa-users-cog"></i> Segment-Specific ROAS</div>
+            <div class="card-body" style="flex:1;">
+              <div class="segment-list">
+                <div class="segment-item">
+                  <div class="segment-color" style="background:var(--accent);"></div>
+                  <div class="segment-info">
+                    <div class="segment-name">Urban Male 25-40</div>
+                    <div class="segment-detail">Primary target segment</div>
+                  </div>
+                  <div class="segment-value">6x</div>
+                </div>
+                <div class="segment-item">
+                  <div class="segment-color" style="background:var(--success);"></div>
+                  <div class="segment-info">
+                    <div class="segment-name">Car Enthusiasts</div>
+                    <div class="segment-detail">Highest engagement niche</div>
+                  </div>
+                  <div class="segment-value" style="color:var(--success);">8x</div>
+                </div>
+                <div class="segment-item">
+                  <div class="segment-color" style="background:var(--danger);"></div>
+                  <div class="segment-info">
+                    <div class="segment-name">General Audience</div>
+                    <div class="segment-detail">Broad, low-intent viewers</div>
+                  </div>
+                  <div class="segment-value" style="color:var(--danger);">2x</div>
+                </div>
+              </div>
+              <div style="margin-top:16px;">
+                <div class="chart-container" style="height:150px;">
+                  <canvas id="roasChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROAS Forecast -->
+          <div class="card" style="margin-bottom:0;display:flex;flex-direction:column;">
+            <div class="card-header"><i class="fas fa-chart-line"></i> ROAS Forecast</div>
+            <div class="card-body" style="flex:1;">
+              <div class="grid-2" style="gap:10px;">
+                <div class="stat-card">
+                  <div class="stat-label">Conservative ROI</div>
+                  <div class="stat-value accent">3x</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Optimistic ROI</div>
+                  <div class="stat-value success">8x</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Payback Period</div>
+                  <div class="stat-value">180<span style="font-size:14px;color:var(--text-muted)"> days</span></div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Est. CVR</div>
+                  <div class="stat-value warning">0.3%</div>
+                  <div class="stat-sub">Benchmark: 0.5%</div>
+                </div>
+              </div>
+              <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+                <div class="stat-card" style="text-align:center;">
+                  <div class="stat-label">LTV:CAC Ratio</div>
+                  <div class="stat-value success" style="font-size:28px;">100x</div>
+                  <div class="stat-sub">Typical CAC ₹15K · LTV ₹15L</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Conversion Drivers + KPIs side by side -->
+        <div class="grid-2" style="align-items:start;">
+          <!-- Conversion Drivers -->
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header"><i class="fas fa-cogs"></i> Conversion Drivers Analysis</div>
+            <div class="card-body">
+              <div class="chart-container" style="height:300px;">
+                <canvas id="driversChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPIs -->
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header"><i class="fas fa-bullseye"></i> Success Metrics & KPIs</div>
+            <div class="card-body">
+              <div class="kpi-row" style="font-weight:600;color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">
+                <div class="kpi-label">Metric</div>
+                <div class="kpi-target" style="color:var(--text-muted);">Target</div>
+                <div class="kpi-benchmark" style="color:var(--text-muted);">Benchmark</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-label">Impressions</div>
+                <div class="kpi-target">50M</div>
+                <div class="kpi-benchmark">30M</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-label">Video Completion Rate</div>
+                <div class="kpi-target">75%</div>
+                <div class="kpi-benchmark">60%</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-label">CTR</div>
+                <div class="kpi-target">2.5%</div>
+                <div class="kpi-benchmark">1.8%</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-label">Engagement Rate</div>
+                <div class="kpi-target">6%</div>
+                <div class="kpi-benchmark">4%</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-label">ROAS</div>
+                <div class="kpi-target">5x</div>
+                <div class="kpi-benchmark">3x</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-label">Brand Awareness Lift</div>
+                <div class="kpi-target">15%</div>
+                <div class="kpi-benchmark">—</div>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-label">Brand Recall</div>
+                <div class="kpi-target">25%</div>
+                <div class="kpi-benchmark">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== COMPETITIVE TAB ===== -->
+      <div class="tab-content" id="tab-competitive">
+        <!-- Row 1: Category Benchmark Stats -->
+        <div class="grid-4" style="margin-bottom:20px;">
+          <div class="stat-card" style="border-top:3px solid var(--accent);">
+            <div class="stat-label">Category Avg Reach</div>
+            <div class="stat-value">30M</div>
+            <div class="stat-sub">Your ad: ~50M est.</div>
+          </div>
+          <div class="stat-card" style="border-top:3px solid var(--accent);">
+            <div class="stat-label">Category Avg Engagement</div>
+            <div class="stat-value">4%</div>
+            <div class="stat-sub">Your ad: ~7% est.</div>
+          </div>
+          <div class="stat-card" style="border-top:3px solid var(--accent);">
+            <div class="stat-label">Category Avg ROAS</div>
+            <div class="stat-value">3x</div>
+            <div class="stat-sub">Your ad: 5x est.</div>
+          </div>
+          <div class="stat-card" style="border-top:3px solid var(--success);">
+            <div class="stat-label">Your Competitive Edge</div>
+            <div class="stat-value accent">Strong</div>
+            <div class="stat-sub">Differentiation via cinematic storytelling</div>
+          </div>
+        </div>
+
+        <!-- Row 2: Two columns — Competitor Cards | Radar Chart -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch;">
+          <!-- LEFT: Competitor Cards stacked -->
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <div class="competitor-card" style="flex:1;display:flex;flex-direction:column;">
+              <div class="competitor-name">Tata Harrier</div>
+              <div class="competitor-campaign">"Reclaim Your Life" Campaign</div>
+              <div class="competitor-stats" style="flex:1;">
+                <div>
+                  <div class="competitor-stat-label">Reach</div>
+                  <div class="competitor-stat-value">40M</div>
+                </div>
+                <div>
+                  <div class="competitor-stat-label">Engagement</div>
+                  <div class="competitor-stat-value">5%</div>
+                </div>
+                <div>
+                  <div class="competitor-stat-label">ROAS</div>
+                  <div class="competitor-stat-value">4x</div>
+                </div>
+              </div>
+              <div class="competitor-verdict"><i class="fas fa-arrow-up"></i> Your ad beats on production quality</div>
+            </div>
+            <div class="competitor-card" style="flex:1;display:flex;flex-direction:column;">
+              <div class="competitor-name">Mahindra XUV700</div>
+              <div class="competitor-campaign">"Born Electric" Campaign</div>
+              <div class="competitor-stats" style="flex:1;">
+                <div>
+                  <div class="competitor-stat-label">Reach</div>
+                  <div class="competitor-stat-value">35M</div>
+                </div>
+                <div>
+                  <div class="competitor-stat-label">Engagement</div>
+                  <div class="competitor-stat-value">6%</div>
+                </div>
+                <div>
+                  <div class="competitor-stat-label">ROAS</div>
+                  <div class="competitor-stat-value">5x</div>
+                </div>
+              </div>
+              <div class="competitor-verdict"><i class="fas fa-arrow-up"></i> Your ad beats on entertainment value</div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Radar Chart -->
+          <div class="card" style="margin-bottom:0;display:flex;flex-direction:column;">
+            <div class="card-header"><i class="fas fa-chart-line"></i> Competitive Positioning</div>
+            <div class="card-body" style="flex:1;display:flex;align-items:center;justify-content:center;">
+              <div style="width:100%;height:100%;min-height:300px;position:relative;">
+                <canvas id="competitiveChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ROADMAP TAB ===== -->
+      <div class="tab-content" id="tab-roadmap">
+        <div class="grid-2" style="align-items:start;">
+          <!-- LEFT COLUMN: Priority Optimization Roadmap -->
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-header"><i class="fas fa-tasks"></i> Priority Optimization Roadmap</div>
+            <div class="card-body">
+              <div class="section-title" style="margin-top:0;color:var(--danger);">Immediate / Critical</div>
+              <div class="action-item"><span class="num" style="background:var(--danger);">!</span> Add "Professional driver, closed course" compliance disclaimers</div>
+
+              <div class="section-title" style="color:var(--warning);">High Priority</div>
+              <div class="action-item"><span class="num">1</span> Strengthen CTA — add test drive booking / dealer locator</div>
+              <div class="action-item"><span class="num">2</span> Create mobile-optimized vertical versions for Reels & Shorts</div>
+
+              <div class="section-title" style="color:var(--info);">Medium Priority</div>
+              <div class="action-item"><span class="num">3</span> Develop regional language variants (Tamil, Telugu)</div>
+              <div class="action-item"><span class="num">4</span> Add social proof and customer testimonial elements</div>
+              <div class="action-item"><span class="num">5</span> Create female-focused variant for broader demographics</div>
+
+              <div class="section-title" style="color:var(--text-muted);">Nice to Have</div>
+              <div class="action-item"><span class="num" style="background:var(--text-muted);">6</span> Behind-the-scenes content for organic reach</div>
+              <div class="action-item"><span class="num" style="background:var(--text-muted);">7</span> Extended versions for different platforms</div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: A/B Tests + Launch Timeline -->
+          <div style="display:flex;flex-direction:column;gap:20px;">
+            <!-- A/B Testing -->
+            <div class="card" style="margin-bottom:0;">
+              <div class="card-header"><i class="fas fa-flask"></i> Recommended A/B Tests</div>
+              <div class="card-body">
+                <div class="stat-card" style="border-left:3px solid var(--accent);margin-bottom:12px;">
+                  <div class="stat-label">Test Variable: CTA Approach</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+                    <span class="tag">A: Visit dealer</span>
+                    <span class="tag">B: Book test drive</span>
+                    <span class="tag">C: Check price</span>
+                  </div>
+                  <div style="margin-top:10px;font-size:12px;color:var(--success);font-weight:600;">
+                    <i class="fas fa-trophy" style="margin-right:4px;"></i> Expected winner: Book test drive
+                  </div>
+                </div>
+                <div class="stat-card" style="border-left:3px solid var(--accent);">
+                  <div class="stat-label">Test Variable: Opening Hook</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+                    <span class="tag">A: Sniper scope</span>
+                    <span class="tag">B: Car reveal</span>
+                    <span class="tag">C: Character intro</span>
+                  </div>
+                  <div style="margin-top:10px;font-size:12px;color:var(--success);font-weight:600;">
+                    <i class="fas fa-trophy" style="margin-right:4px;"></i> Expected winner: Sniper scope
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Launch Timeline -->
+            <div class="card" style="margin-bottom:0;">
+              <div class="card-header"><i class="fas fa-calendar-alt"></i> Launch Timeline</div>
+              <div class="card-body">
+                <div class="grid-2" style="gap:12px;">
+                  <div class="stat-card" style="text-align:center;">
+                    <div class="stat-label">Timeline to Launch</div>
+                    <div class="stat-value accent">4–6 wks</div>
+                  </div>
+                  <div class="stat-card" style="text-align:center;">
+                    <div class="stat-label">Est. Budget</div>
+                    <div class="stat-value">&#8377;20Cr</div>
+                  </div>
+                  <div class="stat-card" style="text-align:center;">
+                    <div class="stat-label">Expected Return</div>
+                    <div class="stat-value success">&#8377;100Cr</div>
+                  </div>
+                  <div class="stat-card" style="text-align:center;">
+                    <div class="stat-label">Viral Window</div>
+                    <div class="stat-value">2–4 wks</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main -->
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Chart defaults
+    Chart.defaults.color = '#a0a0a0';
+    Chart.defaults.borderColor = '#2a2a2a';
+    Chart.defaults.font.family = 'Inter';
+
+    // Virality Chart (Line)
+    new Chart(document.getElementById('viralityChart'), {
+      type: 'line',
+      data: {
+        labels: ['Emotional\nTriggers', 'Meme\nPotential', 'Visual\nSignature', 'Trend\nAlignment', 'Community\nEngagement', 'Cross-Regional\nViral', 'Fan\nActivation'],
+        datasets: [{
+          data: [7, 5, 8, 6, 6, 7, 3],
+          borderColor: '#e8a838',
+          backgroundColor: 'rgba(232, 168, 56, 0.1)',
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: '#e8a838',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, max: 10, grid: { color: '#1a1a1a' } },
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+
+    // Performance Breakdown (Bar)
+    new Chart(document.getElementById('performanceChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Cinemato\ngraphy', 'Editing', 'Sound\nDesign', 'Color\nGrading', 'VFX', 'Content\nClarity', 'Brand\nIdentity', 'Mobile\nOpt.'],
+        datasets: [{
+          data: [9, 9, 8, 8, 8, 7, 7, 6],
+          backgroundColor: '#e8a838',
+          borderRadius: 4,
+          maxBarThickness: 40
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ctx.raw + '/10' } }
+        },
+        scales: {
+          y: { beginAtZero: true, max: 10, grid: { color: '#1a1a1a' } },
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+
+    // Segment Chart (Horizontal Bar)
+    new Chart(document.getElementById('segmentChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Urban Male 25-35', 'Urban Male 35-45', 'Female 25-40', 'Car Enthusiasts'],
+        datasets: [
+          {
+            label: 'Reach (M)',
+            data: [15, 12, 8, 5],
+            backgroundColor: '#e8a838',
+            borderRadius: 4,
+            maxBarThickness: 24
+          },
+          {
+            label: 'Engagement %',
+            data: [8, 6, 3, 12],
+            backgroundColor: '#4ade80',
+            borderRadius: 4,
+            maxBarThickness: 24
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+        scales: {
+          x: { grid: { color: '#1a1a1a' } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+
+    // Media Mix (Doughnut)
+    new Chart(document.getElementById('mediaChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['TV Broadcast', 'YouTube', 'Facebook', 'Instagram', 'OTT', 'Google Display'],
+        datasets: [{
+          data: [40, 25, 20, 10, 5, 5],
+          backgroundColor: ['#e8a838', '#f87171', '#60a5fa', '#a78bfa', '#4ade80', '#fbbf24'],
+          borderWidth: 0,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } }
+        }
+      }
+    });
+
+    // ROAS Chart (Bar)
+    new Chart(document.getElementById('roasChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Urban Male 25-40', 'Car Enthusiasts', 'General Audience'],
+        datasets: [{
+          data: [6, 8, 2],
+          backgroundColor: ['#e8a838', '#4ade80', '#f87171'],
+          borderRadius: 4,
+          maxBarThickness: 50
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ctx.raw + 'x ROAS' } }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#1a1a1a' }, ticks: { callback: v => v + 'x' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // Conversion Drivers (Horizontal Bar)
+    new Chart(document.getElementById('driversChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Product Clarity', 'Value Proposition', 'Credibility', 'CTA Clarity', 'CTA Prominence', 'Social Proof', 'Urgency/Scarcity', 'Price Visibility', 'Objection Handling', 'Risk Reduction', 'Friction Min.'],
+        datasets: [{
+          data: [8, 7, 6, 2, 1, 0, 0, 0, 0, 0, 0],
+          backgroundColor: ctx => {
+            const v = ctx.raw;
+            if (v >= 7) return '#4ade80';
+            if (v >= 4) return '#e8a838';
+            if (v >= 1) return '#fbbf24';
+            return '#333';
+          },
+          borderRadius: 4,
+          maxBarThickness: 20
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, max: 10, grid: { color: '#1a1a1a' } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+
+    // Competitive Chart (Radar)
+    new Chart(document.getElementById('competitiveChart'), {
+      type: 'radar',
+      data: {
+        labels: ['Reach', 'Engagement', 'ROAS', 'Production', 'Entertainment', 'Innovation'],
+        datasets: [
+          {
+            label: 'Hyundai Creta',
+            data: [8, 7, 5, 9, 9, 8],
+            borderColor: '#e8a838',
+            backgroundColor: 'rgba(232, 168, 56, 0.15)',
+            pointBackgroundColor: '#e8a838',
+            borderWidth: 2
+          },
+          {
+            label: 'Tata Harrier',
+            data: [7, 5, 4, 6, 6, 5],
+            borderColor: '#60a5fa',
+            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+            pointBackgroundColor: '#60a5fa',
+            borderWidth: 2
+          },
+          {
+            label: 'Mahindra XUV700',
+            data: [6, 6, 5, 7, 5, 6],
+            borderColor: '#a78bfa',
+            backgroundColor: 'rgba(167, 139, 250, 0.1)',
+            pointBackgroundColor: '#a78bfa',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+        scales: {
+          r: {
+            beginAtZero: true, max: 10,
+            grid: { color: '#2a2a2a' },
+            angleLines: { color: '#2a2a2a' },
+            pointLabels: { color: '#a0a0a0', font: { size: 12 } },
+            ticks: { display: false }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
