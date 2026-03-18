@@ -42,7 +42,7 @@
     .logo {
       width: 120px;
       height: 60px;
-      margin-bottom: 32px;
+      margin: 0 auto 32px;
     }
 
     .logo img {
@@ -134,7 +134,36 @@
       font-size: 13px;
       color: var(--text-secondary);
       line-height: 1.5;
-      margin-bottom: 0;
+      margin-bottom: 14px;
+    }
+
+    /* Feature chips */
+    .role-chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .chip {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .role-card:hover .chip {
+      border-color: rgba(255,255,255,0.1);
+    }
+
+    .role-card.selected .chip {
+      background: rgba(232,168,56,0.1);
+      border-color: rgba(232,168,56,0.2);
+      color: var(--accent);
     }
 
     /* NEW badge */
@@ -291,12 +320,22 @@
       <div class="role-icon"><i class="fas fa-film"></i></div>
       <div class="role-title">Creators</div>
       <div class="role-subtitle">Scriptwriters, Indie filmmakers, Directors and Screenplay Writers</div>
+      <div class="role-chips">
+        <span class="chip">Script Analysis</span>
+        <span class="chip">Trailer Analysis</span>
+        <span class="chip">AI Insights</span>
+      </div>
     </div>
 
     <div class="role-card">
       <div class="role-icon"><i class="fas fa-building-columns"></i></div>
       <div class="role-title">Studios</div>
       <div class="role-subtitle">Studios, Broadcasters, Distributors and Financiers</div>
+      <div class="role-chips">
+        <span class="chip">Script Discovery</span>
+        <span class="chip">Box Office Analytics</span>
+        <span class="chip">Benchmarking</span>
+      </div>
     </div>
 
     <div class="role-card">
@@ -304,6 +343,11 @@
       <div class="role-icon"><i class="fas fa-bullhorn"></i></div>
       <div class="role-title">Brands</div>
       <div class="role-subtitle">Brand Managers, Marketing Teams, Media Planners and Agencies</div>
+      <div class="role-chips">
+        <span class="chip">Ads Analysis</span>
+        <span class="chip">Reels Analysis</span>
+        <span class="chip">Script Analysis</span>
+      </div>
     </div>
 
   </div>
