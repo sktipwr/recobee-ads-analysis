@@ -31,6 +31,31 @@
       align-items: center;
       justify-content: center;
       padding: 40px 24px;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: url('https://www.recobee.ai/unauth/userrole.png') center/cover no-repeat;
+      opacity: 0.06;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 20%, var(--bg-primary) 75%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .header, .roles-grid, .bottom-area {
+      position: relative;
+      z-index: 1;
     }
 
     /* Header */
@@ -323,7 +348,8 @@
       <div class="role-chips">
         <span class="chip">Script Analysis</span>
         <span class="chip">Trailer Analysis</span>
-        <span class="chip">AI Insights</span>
+        <span class="chip">Reel Analysis</span>
+        <span class="chip">Music Video Analysis</span>
       </div>
     </div>
 
@@ -332,9 +358,10 @@
       <div class="role-title">Studios</div>
       <div class="role-subtitle">Studios, Broadcasters, Distributors and Financiers</div>
       <div class="role-chips">
-        <span class="chip">Script Discovery</span>
-        <span class="chip">Box Office Analytics</span>
-        <span class="chip">Benchmarking</span>
+        <span class="chip">Script Analysis</span>
+        <span class="chip">Cinelytics</span>
+        <span class="chip">Trailer Analysis</span>
+        <span class="chip">Marketplace</span>
       </div>
     </div>
 
@@ -345,8 +372,8 @@
       <div class="role-subtitle">Brand Managers, Marketing Teams, Media Planners and Agencies</div>
       <div class="role-chips">
         <span class="chip">Ads Analysis</span>
-        <span class="chip">Reels Analysis</span>
-        <span class="chip">Script Analysis</span>
+        <span class="chip">Reel Analysis</span>
+        <span class="chip">Ads Script Analysis</span>
       </div>
     </div>
 
